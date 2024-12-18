@@ -1,2 +1,3 @@
-terraform/.terraform/
 useful_commands.sh
+terraform/.terraform/
+terraform/terraform.tfstate.backup

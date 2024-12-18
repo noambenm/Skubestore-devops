@@ -22,7 +22,7 @@ resource "aws_subnet" "public_subnet_1" {
   tags = {
     Name = "skubestore-public-subnet-1",
     "kubernetes.io/cluster/${var.cluster_name}" = "shared",
-    "kubernetes.io/role/elb" = 1
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
@@ -34,7 +34,7 @@ resource "aws_subnet" "public_subnet_2" {
   tags = {
     Name = "skubestore-public-subnet-2",
     "kubernetes.io/cluster/${var.cluster_name}" = "shared",
-    "kubernetes.io/role/elb" = 1
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
@@ -45,7 +45,7 @@ resource "aws_subnet" "private_subnet_1" {
   tags = {
     Name = "skubestore-private-subnet-1",
     "kubernetes.io/cluster/${var.cluster_name}" = "shared",
-    "kubernetes.io/role/internal-elb" = 1
+    "kubernetes.io/role/internal-elb" = "1"
   }
 }
 
@@ -56,7 +56,7 @@ resource "aws_subnet" "private_subnet_2" {
   tags = {
     Name = "skubestore-private-subnet-2",
     "kubernetes.io/cluster/${var.cluster_name}" = "shared",
-    "kubernetes.io/role/internal-elb" = 1  
+    "kubernetes.io/role/internal-elb" = "1"  
   }
 }
 

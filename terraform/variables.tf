@@ -41,12 +41,6 @@ variable "keypair" {
   default     = "main-keypair"
 }
 
-variable "controlplane_ami" {
-  description = "The AMI of the controlplane node."
-  type        = string
-  default     = "ami-07e252491d0220a36"
-}
-
 variable "controlplane_instance_type" {
   description = "The instance type of the controlplane node."
   type        = string
@@ -57,12 +51,6 @@ variable "controlplane_ip" {
   description = "The Private IP of the controlplane node, has to be 172.20.10.10"
   type        = string
   default     = "172.20.10.10"
-}
-
-variable "node_01_ami" {
-  description = "The AMI of the node-01 node."
-  type        = string
-  default     = "ami-049542b40a4a26e0d"
 }
 
 variable "node_01_instance_type" {

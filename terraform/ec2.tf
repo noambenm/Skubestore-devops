@@ -34,8 +34,26 @@ resource "aws_security_group" "skubestore_node_sg" {
   }
 }
 
+data "aws_ami" "skubestore-controlplane-ami" {
+  most_recent = true
+  owners      = ["self"] 
+  filter {
+    name   = "tag:Name"
+    values = ["skubestore-controlplane-ami"]
+  }
+}
+
+data "aws_ami" "skubestore-node_01-ami" {
+  most_recent = true
+  owners      = ["self"] 
+  filter {
+    name   = "tag:Name"
+    values = ["skubestore-node-01-ami"]
+  }
+}
+
 resource "aws_instance" "skubestore_controlplane" {
-  ami                         = var.controlplane_ami
+  ami                         = data.aws_ami.skubestore-controlplane-ami.id
   instance_type               = var.controlplane_instance_type
   key_name                    = var.keypair
   subnet_id                   = aws_subnet.public_subnet_1.id
@@ -56,7 +74,7 @@ resource "aws_instance" "skubestore_controlplane" {
 }
 
 resource "aws_instance" "skubestore_node_1" {
-  ami                         = var.node_01_ami
+  ami                         = data.aws_ami.skubestore-node_01-ami.id
   instance_type               = var.node_01_instance_type
   key_name                    = var.keypair
   subnet_id                   = aws_subnet.public_subnet_1.id
