@@ -46,7 +46,6 @@ metadata:
   name: order-service
   namespace: skubestore
 spec:
-  type: NodePort
   selector:
       service: order
   ports:
