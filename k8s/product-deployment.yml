@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-deployment
+  namespace: skubestore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: product
+  template:
+    metadata:
+      labels:
+        service: product
+        tier: backend
+        framework: flask
+    spec:
+      containers:
+      - name: product-container
+        image: noambenm/skubestore-product-service:v1.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - configMapRef:
+            name: skubestore-configmap
+        env:
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: skubestore-secret
+                key: MYSQL_PASSWORD        
+      initContainers:
+      - name: init-container
+        image: noambenm/skubediver-divelog-init:v1.0-alpine3.20
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: skubestore-configmap
+        - secretRef:
+            name: skubestore-secret
+      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: skubestore
+spec:
+  type: NodePort
+  selector:
+      service: product
+  ports:
+  - port: 5000

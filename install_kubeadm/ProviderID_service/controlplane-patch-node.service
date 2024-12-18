@@ -1,0 +1,15 @@
+# needs to be place at /etc/systemd/system/patch-node.service
+
+[Unit]
+Description=Patch Kubernetes Node with AWS Provider ID
+After=network.target kubelet.service
+Wants=kubelet.service
+
+[Service]
+ExecStart=/usr/local/bin/patch-node.sh
+Restart=on-failure
+User=root
+Environment="KUBECONFIG=/etc/kubernetes/admin.conf"
+
+[Install]
+WantedBy=multi-user.target

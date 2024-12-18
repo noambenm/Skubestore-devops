@@ -1,0 +1,63 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: skubestore-ingress
+  namespace: skubestore
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: instance
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:590184057629:certificate/efccf17a-95f7-463e-9ca3-4f6a29804b13
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
+    alb.ingress.kubernetes.io/actions.ssl-redirect: >
+      {"Type":"redirect","RedirectConfig":{"Protocol":"HTTPS","Port":"443","StatusCode":"HTTP_301"}}
+    external-dns.alpha.kubernetes.io/hostname: skubestore.click
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: "/"
+            pathType: Prefix
+            backend:
+              service:
+                name: ssl-redirect
+                port:
+                  name: use-annotation
+    - host: skubestore.click
+      http:
+        paths:
+          - path: "/login"
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 5000
+          - path: "/register"
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 5000
+          - path: "/products"
+            pathType: Prefix
+            backend:
+              service:
+                name: product-service
+                port:
+                  number: 5000
+          - path: "/orders"
+            pathType: Prefix
+            backend:
+              service:
+                name: order-service
+                port:
+                  number: 5000
+
+
+
+
+                  

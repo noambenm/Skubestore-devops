@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  namespace: skubestore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: mysql
+  template:
+    metadata:
+      labels:
+        service: mysql
+        tier: db
+    spec:
+      containers:
+      - name: mysql-container
+        image: mysql:8.0.40-debian
+        ports:
+        - containerPort: 3306
+        envFrom:
+        - configMapRef:
+            name: skubestore-configmap
+        - secretRef:
+            name: skubestore-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  namespace: skubestore
+spec:
+  selector:
+    service: mysql
+  ports:
+  - port: 3306
