@@ -4,6 +4,7 @@ metadata:
   name: skubestore-configmap
   namespace: skubestore
 data:
+  VITE_BACKEND_INGRESS: skubestore-backend-ingress
   MYSQL_HOST: mysql-service.skubestore.svc.cluster.local
   MYSQL_USER: skubestore
   MYSQL_DATABASE: skubestore
