@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
+        DOCKER_HUB_USERNAME = "${DOCKER_HUB_CREDENTIALS_USR}"
+        DOCKER_HUB_PASSWORD = "${DOCKER_HUB_CREDENTIALS_PSW}"
+        IMAGE_NAME = "alexfirilov/skubestore-frontend"
+        IMAGE_TAG = "V1.$BUILD_NUMBER"
+    }
+
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'dev', url: 'https://github.com/noambenm/Skubestore.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Tag both the unique version and latest
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest ."
+                }
+            }
+        }
+
+        stage('Integration Tests with Docker Compose') {
+            steps {
+                script {
+                    sh 'docker-compose down || true'
+                    sh 'docker-compose up -d'
+                    sh 'sleep 10'
+                    sh 'Running_the_app/testing-the-app.sh'
+                }
+            }
+            post {
+                always {
+                    sh 'docker-compose down'
+                    sh 'Running_the_app/cleanup.sh'
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    sh "echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                    sh "docker push ${IMAGE_NAME}:latest"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs for details.'
+        }
+    }
+}
