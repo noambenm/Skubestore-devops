@@ -9,7 +9,6 @@ kubectl apply -f ../k8s/mysql-deployment.yml
 kubectl apply -f ../k8s/user-deployment.yml
 kubectl apply -f ../k8s/product-deployment.yml
 kubectl apply -f ../k8s/order-deployment.yml
-kubectl apply -f ../k8s/internal-ingress.yml
 kubectl apply -f ../k8s/frontend-deployment.yml
 kubectl apply -f ../k8s/aws-ingress-controller.yml
 kubectl apply -f ../k8s/external-dns.yml
