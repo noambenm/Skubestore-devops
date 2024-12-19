@@ -1,7 +1,5 @@
 #!/bin/sh
 
-kubectl delete ingress --all -A
-kubectl delete service --all -A
 kubectl delete -f ../k8s/aws-ingress-controller.yml
 kubectl delete -f ../k8s/external-dns.yml
 kubectl delete -f ../k8s/order-deployment.yml

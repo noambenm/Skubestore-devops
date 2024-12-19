@@ -1,4 +1,7 @@
 #!/bin/sh
+
+chmod +x install_helm.sh
+./install_helm.sh
 kubectl apply -f ../k8s/namespace.yml
 kubectl apply -f ../k8s/configmap.yml
 kubectl apply -f ../k8s/secret.yml

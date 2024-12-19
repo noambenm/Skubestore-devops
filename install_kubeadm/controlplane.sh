@@ -50,25 +50,6 @@ main() {
     echo "Applying the Flannel CNI plugin..."
     kubectl apply -f "$POD_NETWORK_URL" || error_exit "Failed to apply Flannel CNI plugin."
 
-    # Install aws load balancer controller
-    echo "Installing aws load balancer controller..."
-
-    sudo snap install helm --classic
-    helm repo add eks https://aws.github.io/eks-charts
-    helm repo update
-
-    CLUSTER_NAME=$(kubectl -n kube-system get configmap kubeadm-config -o yaml | grep -oP 'clusterName:\s*\K\w+')
-    REGION=$(ec2metadata --availability-zone | sed 's/.$//')
-    TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
-    MAC=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/network/interfaces/macs/ | head -n 1 | tr -d '/')
-    VPC_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/network/interfaces/macs/${MAC}/vpc-id)
-
-    helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-    -n kube-system \
-    --set clusterName=$CLUSTER_NAME \
-    --set region=$REGION \
-    --set vpcId=$VPC_ID || error_exit "Failed to install aws load balancer controller."
-
     echo "Cluster initialization complete. You can now join worker nodes."
 }
 
