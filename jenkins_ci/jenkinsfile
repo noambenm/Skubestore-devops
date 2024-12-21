@@ -1,124 +1,81 @@
 pipeline {
     agent any
-    
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
-        DOCKER_HUB_REPO = "noambenm"
-        VERSION_PREFIX = "v1"
-        // Added environment variables for better maintainability
-        MICROSERVICES = ['user-service', 'product-service', 'order-service', 'skubestore-frontend']
+        DOCKER_HUB_REPO = 'noambenm'
+        DOCKER_HUB_CREDENTIALS_ID = '0217fb0a-9362-4d11-9af3-89bde2cc5e3c'
     }
-    
     stages {
         stage('Checkout Code') {
             steps {
-                checkout scm
-                // Add cleanup to ensure clean workspace
-                cleanWs()
+                checkout([$class: 'GitSCM',
+                          branches: [[name: '*/main']],
+                          userRemoteConfigs: [[url: 'https://github.com/noambenm/Skubestore.git']]])
             }
         }
-        
-        stage('Identify Changes') {
+        stage('Build Docker Images') {
             steps {
                 script {
-                    // Added error handling for git diff
-                    try {
-                        def changedFiles = sh(
-                            script: "git diff --name-only HEAD~1 HEAD || git diff --name-only HEAD", 
-                            returnStdout: true
-                        ).trim().split('\n')
-                        
-                        env.CHANGED_SERVICES = env.MICROSERVICES.findAll { service ->
-                            changedFiles.any { file -> file.startsWith(service + '/') }
-                        }.join(',')
-                        
-                        echo "Changed services: ${env.CHANGED_SERVICES ?: 'None'}"
-                    } catch (Exception e) {
-                        error "Failed to identify changes: ${e.getMessage()}"
-                    }
-                }
-            }
-        }
-        
-        stage('Build and Push Changed Docker Images') {
-            when {
-                expression {
-                    return env.CHANGED_SERVICES?.trim()
-                }
-            }
-            steps {
-                script {
-                    def servicesToBuild = env.CHANGED_SERVICES.split(',')
-                    
-                    // Added retry mechanism for Docker login
-                    retry(3) {
-                        withCredentials([usernamePassword(
-                            credentialsId: 'docker-hub-credentials',
-                            usernameVariable: 'DOCKER_USER',
-                            passwordVariable: 'DOCKER_PASS'
-                        )]) {
-                            sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                    def services = ['order-service', 'product-service', 'user-service', 'frontend-service']
+                    def parallelBuilds = [:]
+
+                    for (service in services) {
+                        def s = service
+                        parallelBuilds[s] = {
+                            def versionedTag = "${DOCKER_HUB_REPO}/skubestore-${s}:v1.0.${env.BUILD_NUMBER}"
+                            def latestTag    = "${DOCKER_HUB_REPO}/skubestore-${s}:latest"
+
+                            echo "Building ${s}..."
+
+                            dir(s) {
+                                sh """
+                                    docker build -t ${versionedTag} -t ${latestTag} .
+                                """
+                            }
                         }
                     }
-                    
-                    // Parallel building of Docker images
-                    def buildSteps = servicesToBuild.collectEntries { service ->
-                        ["Build ${service}" : {
-                            def imageName = "${DOCKER_HUB_REPO}/skubestore-${service}:${VERSION_PREFIX}.${env.BUILD_NUMBER}"
-                            def latestTag = "${DOCKER_HUB_REPO}/skubestore-${service}:latest"
-                            
-                            echo "Building image for ${service}"
-                            try {
-                                // Add build arguments and labels
+
+                    parallel parallelBuilds
+                }
+            }
+        }
+        stage('Push Docker Images') {
+            steps {
+                script {
+                    def services = ['order-service', 'product-service', 'user-service', 'frontend-service']
+                    def parallelPushes = [:]
+
+                    for (service in services) {
+                        def s = service
+                        parallelPushes[s] = {
+                            def versionedTag = "${DOCKER_HUB_REPO}/skubestore-${s}:v1.0.${env.BUILD_NUMBER}"
+                            def latestTag    = "${DOCKER_HUB_REPO}/skubestore-${s}:latest"
+                            echo "Pushing ${s}..."
+
+                            withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS_ID}",
+                                                             usernameVariable: 'DOCKER_HUB_USERNAME',
+                                                             passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                                 sh """
-                                    docker build \
-                                        --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} \
-                                        --build-arg GIT_COMMIT=\$(git rev-parse HEAD) \
-                                        --label "build.number=${env.BUILD_NUMBER}" \
-                                        --label "build.timestamp=\$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
-                                        -t ${imageName} \
-                                        -t ${latestTag} \
-                                        ${service}
-                                """
-                                
-                                echo "Pushing image for ${service}"
-                                sh """
-                                    docker push ${imageName}
+                                    echo \$DOCKER_HUB_PASSWORD | docker login -u \$DOCKER_HUB_USERNAME --password-stdin
+                                    docker push ${versionedTag}
                                     docker push ${latestTag}
+                                    docker logout
                                 """
-                            } catch (Exception e) {
-                                error "Failed to build/push ${service}: ${e.getMessage()}"
                             }
-                        }]
+                        }
                     }
-                    
-                    parallel buildSteps
+
+                    parallel parallelPushes
                 }
             }
         }
     }
-    
+
     post {
         always {
-            script {
-                // Improved cleanup
-                try {
-                    sh '''
-                        docker logout
-                        docker system prune -af
-                        docker volume prune -f
-                    '''
-                } catch (Exception e) {
-                    echo "Warning: Cleanup failed: ${e.getMessage()}"
-                }
-            }
-            cleanWs()
-        }
-        success {
-            echo "Pipeline completed successfully!"
+            echo 'Pipeline execution complete.'
         }
         failure {
-            echo "Pipeline failed! Check the logs for details."
+            echo 'Pipeline failed.'
         }
     }
 }
