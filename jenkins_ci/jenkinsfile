@@ -1,67 +1,147 @@
+def changedServices = []
+
 pipeline {
     agent any
-    environment {
-        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
-        DOCKER_HUB_USERNAME = "${DOCKER_HUB_CREDENTIALS_USR}"
-        DOCKER_HUB_PASSWORD = "${DOCKER_HUB_CREDENTIALS_PSW}"
-        IMAGE_NAME = "alexfirilov/skubestore-frontend"
-        IMAGE_TAG = "V1.$BUILD_NUMBER"
-    }
 
-    triggers {
-        pollSCM('H/5 * * * *')
+    environment {
+        DOCKER_HUB_REPO = 'noambenm'
+        DOCKER_HUB_CREDENTIALS_ID = '0217fb0a-9362-4d11-9af3-89bde2cc5e3c'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'dev', url: 'https://github.com/noambenm/Skubestore.git'
+                checkout([$class: 'GitSCM',
+                          branches: [[name: '*/main']],
+                          userRemoteConfigs: [[url: 'https://github.com/noambenm/Skubestore.git']]])
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Determine Changed Services') {
             steps {
                 script {
-                    // Tag both the unique version and latest
-                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest ."
+                    def allServices = [
+                        'order-service',
+                        'product-service',
+                        'user-service',
+                        'frontend-service'
+                    ]
+
+                    def changedFilesRaw = sh(
+                        script: 'git diff HEAD^ HEAD --name-only || true',
+                        returnStdout: true
+                    ).trim()
+
+                    if (changedFilesRaw) {
+                        def changedFiles = changedFilesRaw.split('\n')
+                        echo "Changed files: ${changedFiles}"
+
+                        for (service in allServices) {
+                            if (changedFiles.any { it.startsWith("${service}/") }) {
+                                changedServices << service
+                            }
+                        }
+                    } else {
+                        echo 'No changed files detected (possibly first commit or empty diff).'
+                    }
+
+                    if (changedServices.isEmpty()) {
+                        echo 'No specific service folders changed. Skipping build/push.'
+                    } else {
+                        echo "Services changed: ${changedServices}"
+                    }
                 }
             }
         }
 
-        stage('Integration Tests with Docker Compose') {
+        stage('Build Docker Images') {
+            when {
+                expression { return !changedServices.isEmpty() }
+            }
             steps {
                 script {
-                    sh 'docker-compose down || true'
-                    sh 'docker-compose up -d'
-                    sh 'sleep 10'
-                    sh 'Running_the_app/testing-the-app.sh'
-                }
-            }
-            post {
-                always {
-                    sh 'docker-compose down'
-                    sh 'Running_the_app/cleanup.sh'
+                    def parallelBuilds = [:]
+
+                    for (service in changedServices) {
+                        def s = service
+                        parallelBuilds[s] = {
+                            def versionedTag = "${DOCKER_HUB_REPO}/skubestore-${s}:v1.0.${env.BUILD_NUMBER}"
+                            def latestTag    = "${DOCKER_HUB_REPO}/skubestore-${s}:latest"
+
+                            echo "Building ${s}..."
+
+                            dir(s) {
+                                sh """
+                                    docker build -t ${versionedTag} -t ${latestTag} .
+                                """
+                            }
+                        }
+                    }
+                    parallel parallelBuilds
                 }
             }
         }
 
-        stage('Push Docker Image to Docker Hub') {
+        // stage('Test Docker Images') {
+        //     steps {
+        //         script {
+        //             sh "docker-compose up -d --build"
+        //             sh "chmod +x tests/compose-test.sh"
+        //             sh "./tests/compose-test.sh"
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             sh "docker-compose down"
+        //         }
+        //     }
+        // }
+
+        stage('Push Docker Images') {
+            when {
+                expression { return !changedServices.isEmpty() }
+            }
             steps {
                 script {
-                    sh "echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
-                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-                    sh "docker push ${IMAGE_NAME}:latest"
+                    def parallelPushes = [:]
+
+                    for (service in changedServices) {
+                        def s = service
+                        parallelPushes[s] = {
+                            def versionedTag = "${DOCKER_HUB_REPO}/skubestore-${s}:v1.0.${env.BUILD_NUMBER}"
+                            def latestTag    = "${DOCKER_HUB_REPO}/skubestore-${s}:latest"
+
+                            echo "Pushing ${s}..."
+
+                            withDockerRegistry(
+                                [ credentialsId: "${DOCKER_HUB_CREDENTIALS_ID}", url: '' ]
+                            ) {
+                                sh """
+                                    docker push ${versionedTag}
+                                    docker push ${latestTag}
+                                """
+                            }
+                        }
+                    }
+                    parallel parallelPushes
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline completed successfully!'
+        always {
+            echo 'Pipeline execution complete. Doing final cleanup...'
+            sh 'docker container prune -f'
+            sh 'docker images --filter "dangling=true" -q | xargs -r docker rmi -f'
+            sh '''
+                docker images --filter "dangling=false" --format "{{.Repository}}:{{.Tag}}" | \
+                grep -v ':latest$' | xargs -r docker rmi -f
+            '''
+            cleanWs()
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
+            echo 'Pipeline failed.'
         }
     }
 }

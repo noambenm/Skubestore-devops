@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout([$class: 'GitSCM',
+                          branches: [[name: '*/main']],
+                          userRemoteConfigs: [[url: 'https://github.com/noambenm/Skubestore-devops.git']]])
+            }
+        }
+        stage('Deploy to k8s') {
+            steps {
+                    sh 'chmod +x running_the_app/deploy_all_manifests.sh'
+                    sh './running_the_app/deploy_all_manifests.sh'
+                }
+            }
+        }
+    post {
+        always {
+            echo 'Cleaning up workspace'
+            cleanWs()
+        }
+        success {
+            echo 'Deployment to k8s succeeded'
+        }
+        failure {
+            echo 'Deployment to k8s failed'
+        }
+    }
+}
