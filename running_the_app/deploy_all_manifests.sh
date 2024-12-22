@@ -11,3 +11,6 @@ kubectl apply -f ../k8s/product-deployment.yml
 kubectl apply -f ../k8s/order-deployment.yml
 kubectl apply -f ../k8s/aws-ingress-controller.yml
 kubectl apply -f ../k8s/external-dns.yml
+kubectl rollout restart deployment user-deployment -n skubestore
+kubectl rollout restart deployment product-deployment -n skubestore
+kubectl rollout restart deployment order-deployment -n skubestore

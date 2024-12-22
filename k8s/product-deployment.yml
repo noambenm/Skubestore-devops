@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: product-container
-        image: noambenm/skubestore-product-service:v1.1
+        image: noambenm/skubestore-product-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

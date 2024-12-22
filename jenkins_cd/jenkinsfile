@@ -10,11 +10,13 @@ pipeline {
         }
         stage('Deploy to k8s') {
             steps {
-                    sh 'chmod +x running_the_app/deploy_all_manifests.sh'
-                    sh './running_the_app/deploy_all_manifests.sh'
+                dir(path: 'running_the_app') {
+                    sh 'chmod +x deploy_all_manifests.sh'
+                    sh './deploy_all_manifests.sh'
                 }
             }
         }
+    }
     post {
         always {
             echo 'Cleaning up workspace'

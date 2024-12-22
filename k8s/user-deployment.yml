@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: user-container
-        image: noambenm/skubestore-user-service:v1.1
+        image: noambenm/skubestore-user-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

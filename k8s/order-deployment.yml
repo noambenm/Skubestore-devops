@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: order-container
-        image: noambenm/skubestore-order-service:v1.1
+        image: noambenm/skubestore-order-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
