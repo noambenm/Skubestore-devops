@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: skubestore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: frontend
+  template:
+    metadata:
+      labels:
+        service: frontend
+        tier: frontend
+        framework: react
+    spec:
+      containers:
+      - name: frontend-container
+        image: noambenm/skubestore-frontend-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        env:
+        - name: PRODUCT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: skubestore-configmap
+              key: PRODUCT_SERVICE_URL
+        - name: ORDER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: skubestore-configmap
+              key: ORDER_SERVICE_URL
+        - name: USER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: skubestore-configmap
+              key: USER_SERVICE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: skubestore
+spec:
+  type: NodePort
+  selector:
+      service: frontend
+  ports:
+  - port: 80

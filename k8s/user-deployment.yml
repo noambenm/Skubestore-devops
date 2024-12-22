@@ -45,7 +45,6 @@ metadata:
   name: user-service
   namespace: skubestore
 spec:
-  type: NodePort
   selector:
       service: user
   ports:
