@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: noambenm/skubestore-frontend-service:v1.0
+        image: noambenm/skubestore-frontend-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80
