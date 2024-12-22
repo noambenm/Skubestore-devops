@@ -65,3 +65,14 @@ variable "node_01_ip" {
   default     = "172.20.10.20"
 }
 
+variable "jenkins_instance_type" {
+  description = "The instance type of jenkins."
+  type        = string
+  default     = "t2.medium"
+}
+
+variable "aws_route53_zone_id" {
+  description = "The Route 53 skubestore.click Zone ID"
+  type        = string
+  default     = "Z05022711DDYB75JEHHOL"
+}
