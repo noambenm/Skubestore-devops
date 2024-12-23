@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -8,15 +9,46 @@ pipeline {
                           userRemoteConfigs: [[url: 'https://github.com/noambenm/Skubestore-devops.git']]])
             }
         }
-        stage('Deploy to k8s') {
+
+        stage('Determine Changed K8s Manifests') {
             steps {
-                dir(path: 'running_the_app') {
-                    sh 'chmod +x deploy_all_manifests.sh'
-                    sh './deploy_all_manifests.sh'
+                script {
+                    changedK8sFiles = []
+
+                    def changedFilesRaw = sh(
+                        script: """
+                            git diff --diff-filter=AMR HEAD^ HEAD --name-only | grep '^k8s/' || true
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    if (changedFilesRaw) {
+                        changedK8sFiles = changedFilesRaw.split('\n')
+                        echo "Changed K8s files detected: ${changedK8sFiles}"
+                    } else {
+                        echo 'No changed K8s files detected'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to k8s') {
+            when {
+                expression {
+                    return changedK8sFiles && changedK8sFiles.size() > 0
+                }
+            }
+            steps {
+                script {
+                    changedK8sFiles.each { file ->
+                        echo "Applying manifest: ${file}"
+                        sh "kubectl apply -f ${file}"
+                    }
                 }
             }
         }
     }
+
     post {
         always {
             echo 'Cleaning up workspace'
