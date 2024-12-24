@@ -50,7 +50,7 @@ metadata:
     alb.ingress.kubernetes.io/target-type: instance
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:590184057629:certificate/17d63cf0-71c8-41f7-b312-dfc72d63c2b5
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:590184057629:certificate/133bcce7-a99c-48a8-9a19-c9d62ea88f10
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
     alb.ingress.kubernetes.io/actions.ssl-redirect: >
       {"Type":"redirect","RedirectConfig":{"Protocol":"HTTPS","Port":"443","StatusCode":"HTTP_301"}}
