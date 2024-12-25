@@ -32,7 +32,45 @@ pipeline {
             }
         }
 
-        stage('Deploy to k8s') {
+        stage('Validate K8s Manifests') {
+            when {
+                expression {
+                    return changedK8sFiles && changedK8sFiles.size() > 0
+                }
+            }
+            steps {
+                dir('k8s') {
+                    script {
+                        changedK8sFiles.each { file ->
+                            echo "Validating manifest: ${file}"
+                            sh "kubectl apply --dry-run=client -f ${file}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to stage namespace') {
+            when {
+                expression {
+                    return changedK8sFiles && changedK8sFiles.size() > 0
+                }
+            }
+            steps {
+                dir('k8s') {
+                    script {
+                        changedK8sFiles.each { file ->
+                            echo "Applying manifest: ${file} to stage namespace"
+                            sh 'kubectl apply -f namespace.yml'
+                            sh 'kubectl config set-context --current --namespace=skubestore-stage'
+                            sh "kubectl apply -f ${file}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Run Pod readiness check') {
             when {
                 expression {
                     return changedK8sFiles && changedK8sFiles.size() > 0
@@ -40,9 +78,26 @@ pipeline {
             }
             steps {
                 script {
-                    changedK8sFiles.each { file ->
-                        echo "Applying manifest: ${file}"
-                        sh "kubectl apply -f ${file}"
+                    echo 'Running tests'
+                    sh "kubectl wait --for=condition=ready --timeout=60s pods -l 'tier in (frontend,backend,db)'"
+                }
+            }
+        }
+
+        stage('Deploy to prod namespace') {
+            when {
+                expression {
+                    return changedK8sFiles && changedK8sFiles.size() > 0
+                }
+            }
+            steps {
+                dir('k8s') {
+                    script {
+                        changedK8sFiles.each { file ->
+                            echo "Applying manifest: ${file} to prod namespace"
+                            sh 'kubectl config set-context --current --namespace=skubestore-prod'
+                            sh "kubectl apply -f ${file}"
+                        }
                     }
                 }
             }

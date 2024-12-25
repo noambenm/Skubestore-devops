@@ -1,5 +1,9 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: skubestore
-  
+  name: skubestore-prod
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: skubestore-stage
