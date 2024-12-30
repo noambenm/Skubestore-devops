@@ -20,6 +20,7 @@ RUNC_FILE="$TMP_DIR/runc.amd64"
 CNI_FILE="$TMP_DIR/cni-plugins-linux-amd64-$CNI_VERSION.tgz"
 
 CONTAINERD_URL="https://github.com/containerd/containerd/releases/download/v$CONTAINERD_VERSION/$(basename $CONTAINERD_FILE)"
+CONTAINERD_SERVICE_URL="https://raw.githubusercontent.com/containerd/containerd/main/containerd.service"
 RUNC_URL="https://github.com/opencontainers/runc/releases/download/$RUNC_VERSION/$(basename $RUNC_FILE)"
 CNI_URL="https://github.com/containernetworking/plugins/releases/download/$CNI_VERSION/$(basename $CNI_FILE)"
 
@@ -115,7 +116,7 @@ echo "Extracting and installing containerd to $CONTAINERD_INSTALL_PATH..."
 sudo tar -C $CONTAINERD_INSTALL_PATH -xzf $CONTAINERD_FILE
 
 echo "Setting up containerd systemd service..."
-wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -O "$TMP_DIR/containerd.service"
+wget $CONTAINERD_SERVICE_URL -O "$TMP_DIR/containerd.service"
 sudo mv "$TMP_DIR/containerd.service" $SYSTEMD_SERVICE_DIR
 
 echo "Reloading systemd and enabling containerd service..."
