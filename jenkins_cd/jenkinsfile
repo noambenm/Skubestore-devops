@@ -80,7 +80,7 @@ pipeline {
             steps {
                 script {
                     echo 'Running tests'
-                    sh "kubectl wait --for=condition=ready --timeout=60s pods -l 'tier in (frontend,backend,db)'"
+                    sh "kubectl wait --for=condition=ready --timeout=120s pods -l 'tier in (frontend,backend,db)'"
                 }
             }
         }
@@ -96,7 +96,7 @@ pipeline {
                     changedK8sFiles.each { file ->
                         echo "Applying manifest: ${file} to prod namespace"
                         sh 'kubectl config set-context --current --namespace=skubestore-prod'
-                        sh "kubectl apply -f ${file}"\
+                        sh "kubectl apply -f ${file}"
                     }
                 }
             }
