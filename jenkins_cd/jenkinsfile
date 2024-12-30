@@ -58,16 +58,17 @@ pipeline {
                 script {
                     changedK8sFiles.each { file ->
                         echo "Applying manifest: ${file} to stage namespace"
-                        sh 'kubectl apply -f k8s/namespace.yml'
                         sh 'kubectl config set-context --current --namespace=skubestore-stage'
                         sh "kubectl apply -f ${file}"
                     }
                 }
             }
-            post{
-                success {
-                    sh 'kubectl rollout restart deployment -l app=skubestore'
-                }
+        }
+        stage('restart deployment-stage') {
+            steps {
+                echo 'Restarting satge deployment'
+                sh 'kubectl config set-context --current --namespace=skubestore-stage'
+                sh 'kubectl rollout restart deployment -l app=skubestore'
             }
         }
 
@@ -100,10 +101,12 @@ pipeline {
                     }
                 }
             }
-            post{
-                success {
-                    sh 'kubectl rollout restart deployment -l app=skubestore'
-                }
+        }
+        stage('restart deployment-prod') {
+            steps {
+                echo 'Restarting prod deployment'
+                sh 'kubectl config set-context --current --namespace=skubestore-prod'
+                sh 'kubectl rollout restart deployment -l app=skubestore'
             }
         }
     }
