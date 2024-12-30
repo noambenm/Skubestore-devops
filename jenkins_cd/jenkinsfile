@@ -1,103 +1,89 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'CHANGED_SERVICES', defaultValue: '',
+               description: 'Comma-separated list of services that have new Docker images.')
+        string(name: 'BUILD_NUMBER', defaultValue: '',
+               description: 'Build number for versioned Docker tag, e.g. "123" for v1.0.123')
+    }
+
     stages {
-        stage('Checkout Code') {
+        stage('Checkout DevOps Repo') {
             steps {
                 checkout([$class: 'GitSCM',
-                          branches: [[name: '*/main']],
+                          branches: [[name: '*/fix-deployments']],
                           userRemoteConfigs: [[url: 'https://github.com/noambenm/Skubestore-devops.git']]])
             }
         }
-
         stage('Determine Changed K8s Manifests') {
             steps {
                 script {
-                    changedK8sFiles = []
-
+                    env.CHANGED_K8S_FILES = ''
                     def changedFilesRaw = sh(
                         script: """
-                            git diff --diff-filter=AMR HEAD^ HEAD --name-only | grep '^k8s/' || true
+                          git diff --diff-filter=AMR HEAD^ HEAD --name-only | grep '^k8s/' || true
                         """,
                         returnStdout: true
                     ).trim()
 
                     if (changedFilesRaw) {
-                        changedK8sFiles = changedFilesRaw.split('\n')
-                        echo "Changed K8s files detected: ${changedK8sFiles}"
+                        def changedFilesList = changedFilesRaw.split('\n')
+                        echo "Changed K8s files: ${changedFilesList}"
+                        env.CHANGED_K8S_FILES = changedFilesList.join(',')
                     } else {
-                        echo 'No changed K8s files detected'
+                        echo 'No changed K8s files detected.'
                     }
                 }
             }
         }
-
-        stage('Validate K8s Manifests') {
+        stage('Apply Changed K8s Manifests') {
             when {
                 expression {
-                    return changedK8sFiles && changedK8sFiles.size() > 0
-                }
-            }
-            steps {
-                dir('k8s') {
-                    script {
-                        changedK8sFiles.each { file ->
-                            echo "Validating manifest: ${file}"
-                            sh "kubectl apply --dry-run=client -f ${file}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Deploy to stage namespace') {
-            when {
-                expression {
-                    return changedK8sFiles && changedK8sFiles.size() > 0
-                }
-            }
-            steps {
-                dir('k8s') {
-                    script {
-                        changedK8sFiles.each { file ->
-                            echo "Applying manifest: ${file} to stage namespace"
-                            sh 'kubectl apply -f namespace.yml'
-                            sh 'kubectl config set-context --current --namespace=skubestore-stage'
-                            sh "kubectl apply -f ${file}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Run Pod readiness check') {
-            when {
-                expression {
-                    return changedK8sFiles && changedK8sFiles.size() > 0
+                    return env.CHANGED_K8S_FILES?.trim()
                 }
             }
             steps {
                 script {
-                    echo 'Running tests'
-                    sh "kubectl wait --for=condition=ready --timeout=60s pods -l 'tier in (frontend,backend,db)'"
+                    def changedK8sList = env.CHANGED_K8S_FILES.split(',')
+                    changedK8sList.each { file ->
+                        echo "Applying: ${file}"
+                        sh "kubectl apply -f ${file}"
+                    }
                 }
             }
         }
-
-        stage('Deploy to prod namespace') {
+        stage('Set Deployment Images for Changed Services') {
             when {
                 expression {
-                    return changedK8sFiles && changedK8sFiles.size() > 0
+                    return params.CHANGED_SERVICES?.trim()
                 }
             }
             steps {
-                dir('k8s') {
-                    script {
-                        changedK8sFiles.each { file ->
-                            echo "Applying manifest: ${file} to prod namespace"
-                            sh 'kubectl config set-context --current --namespace=skubestore-prod'
-                            sh "kubectl apply -f ${file}"
-                        }
+                script {
+                    def services = params.CHANGED_SERVICES.split(',')
+                    services.each { service ->
+
+                        def containerName = service.replace('-service', '-container')
+                        def imageTag = "noambenm/skubestore-${service}:v1.0.${params.BUILD_NUMBER}"
+
+                        echo "Updating deployment/skubestore-${service} container=${containerName} to ${imageTag}"
+
+                        sh "kubectl config set-context --current --namespace=skubestore-stage"
+                        sh """
+                        kubectl set image \
+                            deployment/skubestore-${service} \
+                            ${containerName}=${imageTag}
+                        """
+                        sh "kubectl rollout status deployment/skubestore-${service} --timeout=60s"
+
+                        sh "kubectl config set-context --current --namespace=skubestore-prod"
+                        sh """
+                        kubectl set image \
+                            deployment/skubestore-${service} \
+                            ${containerName}=${imageTag}
+                        """
+                        sh "kubectl rollout status deployment/skubestore-${service} --timeout=60s"
                     }
                 }
             }
@@ -106,14 +92,13 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up workspace'
-            cleanWs()
+            echo "Finished pipeline (DevOps CD)."
         }
         success {
-            echo 'Deployment to k8s succeeded'
+            echo "All changes successfully applied."
         }
         failure {
-            echo 'Deployment to k8s failed'
+            echo "Deployment failed."
         }
     }
 }

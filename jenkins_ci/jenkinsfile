@@ -39,20 +39,20 @@ pipeline {
                         for (service in allServices) {
                             if (changedFiles.any { it.startsWith("${service}/") }) {
                                 changedServices << service
-                            }
                         }
+                    }
                     } else {
                         echo 'No changed files detected (possibly first commit or empty diff).'
-                    }
+                }
 
                     if (changedServices.isEmpty()) {
                         echo 'No specific service folders changed. Skipping build/push.'
                     } else {
                         echo "Services changed: ${changedServices}"
                     }
-                }
             }
         }
+    }
 
         stage('Build Docker Images') {
             when {
@@ -127,7 +127,26 @@ pipeline {
                 }
             }
         }
-    }
+        stage('Trigger CD Pipeline') {
+            when {
+                expression { return !changedServices.isEmpty() }
+            }
+            steps {
+                script {
+                    // Build a comma-separated string of changed services, e.g. "order-service,product-service"
+                    def servicesString = changedServices.join(',')
+
+                    // Trigger the downstream (CD) pipeline
+                    build job: 'skubestore_cd',
+                        wait: true,
+                        parameters: [
+                            string(name: 'CHANGED_SERVICES', value: servicesString),
+                            string(name: 'BUILD_NUMBER', value: env.BUILD_NUMBER)
+                        ]
+                }
+            }
+        }
+}
 
     post {
         always {
