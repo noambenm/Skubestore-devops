@@ -1,6 +1,6 @@
 #!/bin/sh
 
-kubectl delete -f ../k8s/aws-ingress-controller.yml && sleep 20
+kubectl delete -f ../k8s/aws-ingress-controller.yml && sleep 60
 kubectl delete -f ../k8s/external-dns.yml
 kubectl delete -f ../k8s/frontend-deployment.yml
 kubectl delete -f ../k8s/order-deployment.yml
