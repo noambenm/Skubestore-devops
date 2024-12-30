@@ -2,20 +2,23 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'CHANGED_SERVICES', defaultValue: '',
-               description: 'Comma-separated list of services that have new Docker images.')
-        string(name: 'BUILD_NUMBER', defaultValue: '',
-               description: 'Build number for versioned Docker tag, e.g. "123" for v1.0.123')
+        string(name: 'CHANGED_SERVICES', defaultValue: '', description: 'Services that have new Docker images to deploy.')
+        string(name: 'BUILD_NUMBER', defaultValue: '', description: 'Build number from the CI pipeline.')
     }
 
     stages {
         stage('Checkout DevOps Repo') {
             steps {
-                checkout([$class: 'GitSCM',
-                          branches: [[name: '*/fix-deployments']],
-                          userRemoteConfigs: [[url: 'https://github.com/noambenm/Skubestore-devops.git']]])
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/noambenm/Skubestore-devops.git'
+                    ]]
+                ])
             }
         }
+
         stage('Determine Changed K8s Manifests') {
             steps {
                 script {
@@ -26,7 +29,6 @@ pipeline {
                         """,
                         returnStdout: true
                     ).trim()
-
                     if (changedFilesRaw) {
                         def changedFilesList = changedFilesRaw.split('\n')
                         echo "Changed K8s files: ${changedFilesList}"
@@ -37,6 +39,7 @@ pipeline {
                 }
             }
         }
+
         stage('Apply Changed K8s Manifests') {
             when {
                 expression {
@@ -53,37 +56,33 @@ pipeline {
                 }
             }
         }
+
         stage('Set Deployment Images for Changed Services') {
             when {
-                expression {
-                    return params.CHANGED_SERVICES?.trim()
-                }
+                expression { return params.CHANGED_SERVICES?.trim() }
             }
             steps {
                 script {
                     def services = params.CHANGED_SERVICES.split(',')
                     services.each { service ->
-
-                        def containerName = service.replace('-service', '-container')
+                        def deploymentName = service.replace('-service', '-deployment')
+                        def containerName  = service.replace('-service', '-container')
                         def imageTag = "noambenm/skubestore-${service}:v1.0.${params.BUILD_NUMBER}"
-
-                        echo "Updating deployment/skubestore-${service} container=${containerName} to ${imageTag}"
-
+                        echo "Updating deployment/${deploymentName} container=${containerName} to ${imageTag}"
                         sh "kubectl config set-context --current --namespace=skubestore-stage"
                         sh """
-                        kubectl set image \
-                            deployment/skubestore-${service} \
+                          kubectl set image \
+                            deployment/${deploymentName} \
                             ${containerName}=${imageTag}
                         """
-                        sh "kubectl rollout status deployment/skubestore-${service} --timeout=60s"
-
+                        sh "kubectl rollout status deployment/${deploymentName} --timeout=60s"
                         sh "kubectl config set-context --current --namespace=skubestore-prod"
                         sh """
-                        kubectl set image \
-                            deployment/skubestore-${service} \
+                          kubectl set image \
+                            deployment/${deploymentName} \
                             ${containerName}=${imageTag}
                         """
-                        sh "kubectl rollout status deployment/skubestore-${service} --timeout=60s"
+                        sh "kubectl rollout status deployment/${deploymentName} --timeout=60s"
                     }
                 }
             }
