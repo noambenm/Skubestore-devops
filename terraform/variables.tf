@@ -29,6 +29,12 @@ variable "home_ip" {
   default     = "89.139.18.223/32"
 }
 
+variable "alex_ip" {
+  description = "Alex's home IP address in CIDR format"
+  type        = string
+  default     = "85.250.134.166/32"
+}
+
 variable "cluster_name" {
   description = "Name of the Kubeadm cluster"
   type        = string

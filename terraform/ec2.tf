@@ -18,7 +18,7 @@ resource "aws_security_group" "skubestore_node_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.home_ip]
+    cidr_blocks = [var.home_ip, var.alex_ip]
   }
 
   # Outbound rules (allow all traffic)
@@ -45,7 +45,7 @@ resource "aws_security_group" "skubestore_jenkins_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.home_ip]
+    cidr_blocks = [var.home_ip, var.alex_ip]
   }
   # Allow TCP on port 8080 for GitHub IP ranges
   ingress {
