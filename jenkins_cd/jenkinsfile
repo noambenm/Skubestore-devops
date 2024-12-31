@@ -84,6 +84,11 @@ pipeline {
                     sh "kubectl wait --for=condition=ready --timeout=120s pods -l 'tier in (frontend,backend,db)' -n skubestore-stage"
                 }
             }
+            post {
+                failure {
+                    sh 'kubectl rolluot undo deployment -l app=skubestore'
+                }
+            }
         }
 
         stage('Deploy to prod namespace') {
