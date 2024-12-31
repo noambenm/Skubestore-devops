@@ -6,9 +6,9 @@ data:
   MYSQL_HOST: mysql-service
   MYSQL_USER: skubestore
   MYSQL_DATABASE: skubestore
-  PRODUCT_SERVICE_URL: http://product-service:5000
-  ORDER_SERVICE_URL: http://order-service:5000
-  USER_SERVICE_URL: http://user-service:5000
+  VITE_PRODUCT_SERVICE_URL: http://product-service:5000
+  VITE_ORDER_SERVICE_URL: http://order-service:5000
+  VITE_USER_SERVICE_URL: http://user-service:5000
 ---
 apiVersion: v1
 kind: ConfigMap
