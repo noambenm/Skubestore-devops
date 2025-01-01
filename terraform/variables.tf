@@ -32,7 +32,7 @@ variable "home_ip" {
 variable "alex_ip" {
   description = "Alex's home IP address in CIDR format"
   type        = string
-  default     = "85.250.134.166/32"
+  default     = "85.250.129.166/32"
 }
 
 variable "cluster_name" {
