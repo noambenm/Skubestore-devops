@@ -46,6 +46,7 @@ kind: Service
 metadata:
   name: order-service
 spec:
+  type: NodePort
   selector:
       service: order
   ports:
