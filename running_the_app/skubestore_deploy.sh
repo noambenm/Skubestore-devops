@@ -39,8 +39,8 @@ echo "Installing kubernetes components..."
 kubectl apply -f namespace.yml
 kubectl apply -f aws-ingress-controller.yml
 kubectl apply -f external-dns.yml
-
-
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.1/cert-manager.yaml
+kubectl apply -f cluster-issuer.yml
 # Install stage environment
 
 kubectl config set-context --current --namespace=skubestore-stage
