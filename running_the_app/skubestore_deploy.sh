@@ -27,6 +27,13 @@ sleep 10
 git clone https://github.com/noambenm/Skubestore-devops.git
 cd Skubestore-devops/k8s
 
+# Installing ngnix ingress controller
+echo "Installing ngnix ingress controller..."
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx --create-namespace \
+  --set controller.service.type=ClusterIP || error_exit "Failed to install ngnix ingress controller."
+
 # Installing kubernetes components
 echo "Installing kubernetes components..."
 kubectl apply -f namespace.yml

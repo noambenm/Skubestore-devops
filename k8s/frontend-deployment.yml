@@ -23,21 +23,11 @@ spec:
         ports:
         - containerPort: 80
         env:
-        - name: VITE_PRODUCT_SERVICE_URL
+        - name: VITE_BACKEND_URL
           valueFrom:
             configMapKeyRef:
               name: skubestore-configmap
-              key: VITE_PRODUCT_SERVICE_URL
-        - name: VITE_ORDER_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: skubestore-configmap
-              key: VITE_ORDER_SERVICE_URL
-        - name: VITE_USER_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: skubestore-configmap
-              key: VITE_USER_SERVICE_URL
+              key: VITE_BACKEND_URL
 ---
 apiVersion: v1
 kind: Service

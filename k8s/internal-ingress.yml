@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: internal-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/register"
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 5000
+          - pathType: Prefix
+            path: "/login"
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 5000
+          - pathType: Prefix
+            path: "/products"
+            backend:
+              service:
+                name: product-service
+                port:
+                  number: 5000
+          - pathType: Prefix
+            path: "/orders"
+            backend:
+              service:
+                name: order-service
+                port:
+                  number: 5000

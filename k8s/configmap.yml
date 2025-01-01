@@ -6,9 +6,7 @@ data:
   MYSQL_HOST: mysql-service
   MYSQL_USER: skubestore
   MYSQL_DATABASE: skubestore
-  VITE_PRODUCT_SERVICE_URL: http://product-service:5000
-  VITE_ORDER_SERVICE_URL: http://order-service:5000
-  VITE_USER_SERVICE_URL: http://user-service:5000
+  VITE_BACKEND_URL:  http://ingress-nginx-controller.ingress-nginx.svc.cluster.local
 ---
 apiVersion: v1
 kind: ConfigMap
