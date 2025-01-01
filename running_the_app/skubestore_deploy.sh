@@ -34,6 +34,16 @@ helm upgrade --install ingress-nginx ingress-nginx \
   --namespace ingress-nginx --create-namespace \
   --set controller.service.type=ClusterIP || error_exit "Failed to install ngnix ingress controller."
 
+# Wait for NGINX ingress controller webhook to become ready
+echo "Waiting for NGINX ingress controller webhook to become ready..."
+while true; do
+    kubectl get endpoints ingress-nginx-controller-admission -n ingress-nginx | grep -q "10." && break
+    echo "Waiting for ingress-nginx-admission to become ready..."
+    sleep 5
+done
+echo "NGINX ingress controller webhook is ready."
+sleep 10
+
 # Installing kubernetes components
 echo "Installing kubernetes components..."
 kubectl apply -f namespace.yml
@@ -41,6 +51,7 @@ kubectl apply -f aws-ingress-controller.yml
 kubectl apply -f external-dns.yml
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.1/cert-manager.yaml
 kubectl apply -f cluster-issuer.yml
+kubectl apply -f internal-ingress.yml
 # Install stage environment
 
 kubectl config set-context --current --namespace=skubestore-stage

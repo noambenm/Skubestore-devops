@@ -6,7 +6,7 @@ data:
   MYSQL_HOST: mysql-service
   MYSQL_USER: skubestore
   MYSQL_DATABASE: skubestore
-  VITE_BACKEND_URL:  http://ingress-nginx-controller.ingress-nginx.svc.cluster.local
+  VITE_BACKEND_URL:  https://ingress-nginx-controller.ingress-nginx.svc.cluster.local
 ---
 apiVersion: v1
 kind: ConfigMap
