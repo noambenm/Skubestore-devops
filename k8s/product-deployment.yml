@@ -5,7 +5,7 @@ metadata:
   labels:
     app: skubestore
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       service: product
@@ -47,6 +47,7 @@ kind: Service
 metadata:
   name: product-service
 spec:
+  type: NodePort
   selector:
       service: product
   ports:

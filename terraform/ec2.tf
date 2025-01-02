@@ -140,6 +140,11 @@ resource "aws_instance" "skubestore_node_1" {
   subnet_id                   = aws_subnet.public_subnet_1.id
   associate_public_ip_address = true
 
+ root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
+
   tags = {
     Name = "skubestore-node-01"
   }

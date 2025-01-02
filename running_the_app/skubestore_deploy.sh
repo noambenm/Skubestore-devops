@@ -32,8 +32,6 @@ echo "Installing kubernetes components..."
 kubectl apply -f namespace.yml
 kubectl apply -f aws-ingress-controller.yml
 kubectl apply -f external-dns.yml
-
-
 # Install stage environment
 
 kubectl config set-context --current --namespace=skubestore-stage
